@@ -11,7 +11,7 @@ MySQL language: https://dev.mysql.com/doc/refman/8.0/en/
 #host="192.168.1.95"
 #host="127.0.0.1"
 host="db"
-version="1.2"
+version="1.3"
 
 @app.route('/')
 def hello_world():
@@ -20,7 +20,7 @@ def hello_world():
     # TODO
     retval = ""
     db = MySQLdb.connect(
-        user="root", passwd="password", db="DockBeanBiz", host=host, port=3306)
+        user="beaner", passwd="password", db="DockBeanBiz", host=host, port=3306)
     cur = db.cursor()
     cur.execute("""SELECT * FROM menu LIMIT 10""")
     data = cur.fetchall()

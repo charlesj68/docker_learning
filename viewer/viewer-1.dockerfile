@@ -10,7 +10,7 @@ COPY source .
 RUN ["apk", "add", "build-base"]
 # We need mariadb-dev to use the mysqlclient package
 RUN ["apk", "add", "mariadb-dev"]
-RUN pip install -r viewer_requirements.txt
+RUN pip install -r requirements.txt
 ENV FLASK_APP="viewer.py"
 ENV FLASK_DEBUG=1
 # EXPOSE tells the world what port(s) we are planning on communicating outward

@@ -3,8 +3,8 @@ version: '3.2'
 
 services:
   db:
-    image: mysql
-    command: --default-authentication-plugin=mysql_native_password
+    image: mysql:5.7.22
+    # command: --default-authentication-plugin=mysql_native_password
     container_name: db
     restart: always
     ports:
@@ -17,15 +17,26 @@ services:
         source: ./db/initdb.d
         target: /docker-entrypoint-initdb.d
   viewer:
-    # The viewer image currently must be manually built
-    # docker build -f viewer.dockerfile --tag viewer .
     build:
       context: viewer/
       dockerfile: viewer-2.dockerfile
     restart: always
     ports:
       - 5000:5000
+    depends_on:
+      - "db"
     volumes:
       - type: bind
         source: ./viewer/source
         target: /srv/viewer
+  creator:
+    build:
+      context: creator/
+      dockerfile: creator.dockerfile
+    restart: always
+    depends_on:
+      - "db"
+    volumes:
+      - type: bind
+        source: ./creator/source
+        target: /home/creator
