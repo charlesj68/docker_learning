@@ -33,7 +33,7 @@ services:
     build:
       context: creator/
       dockerfile: creator.dockerfile
-    restart: always
+    restart: "no"
     depends_on:
       - "db"
     volumes:
