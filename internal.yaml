@@ -8,7 +8,7 @@ services:
     container_name: db
     restart: always
     ports:
-      - 3306:3306
+      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: DockBeanBiz
@@ -22,7 +22,7 @@ services:
       dockerfile: viewer-2.dockerfile
     restart: always
     ports:
-      - 5000:5000
+      - "5000:5000"
     depends_on:
       - "db"
     volumes:

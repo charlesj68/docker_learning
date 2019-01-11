@@ -1,6 +1,7 @@
 import MySQLdb
 import _mysql_exceptions
 from time import (sleep, strftime)
+from numpy.random import (normal, randint)
 
 """
 MySQLdb reference: https://mysqlclient.readthedocs.io/index.html
@@ -8,7 +9,6 @@ MySQL language: https://dev.mysql.com/doc/refman/8.0/en/
 """
 host = "db"
 CONNECT_RETRY_TIMEOUT = 10
-ORDER_INTERVAL_TIMEOUT = 10
 
 # SQL Statements
 SQL_MENU_ITEMS = """
@@ -20,6 +20,18 @@ SQL_INSERT_ORDER = """
             (`menu_item_id`, `quantity`, `placement_time`)
         VALUES
             ({},{},'{}');"""
+
+def gen_order_timeout():
+    ORDER_INTERVAL_TIMEOUT_MEAN = 10.0
+    ORDER_INTERVAL_TIMEOUT_SD = 5.0
+
+    while True:
+        timeout = int(normal(
+            ORDER_INTERVAL_TIMEOUT_MEAN, ORDER_INTERVAL_TIMEOUT_MEAN, None))
+        if timeout > 0:
+            break
+    print("Generated timeout: {}".format(timeout))
+    return timeout
 
 
 def main():
@@ -47,20 +59,21 @@ def main():
         for item in cur.fetchall()]
     # Perform inserts until we're shut down
     print("Start inserts")
-    while (True):
+    short_circuit = 10
+    while (True and short_circuit > 0):
         print("Add an order")
         # RNG menu item
-        item = 1
+        item = menu[randint(0, len(menu))]
         # RNG quantity
-        quantity = 1
+        quantity = randint(1, 4)
+        print("Create order for {} of {}".format(quantity, item["item_name"]))
         sql = SQL_INSERT_ORDER.format(
-            item, quantity, strftime('%Y-%m-%d %H:%M:%S'))
+            item["menu_item_id"], quantity, strftime('%Y-%m-%d %H:%M:%S'))
         cur = db.cursor()
         cur.execute(sql)
         db.commit()
-        sleep(ORDER_INTERVAL_TIMEOUT)
-        # Only one cycle for now
-        break
+        sleep(gen_order_timeout())
+        short_circuit = short_circuit - 1
 
     print("Shutdown")
 
