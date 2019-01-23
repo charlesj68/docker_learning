@@ -1,0 +1,58 @@
+---
+- hosts: localhost
+  name: create and run example docker application stack
+  
+  tasks:
+  - name: Initialize database container
+    docker_container:
+      name: db
+      image: mysql:5.7.22
+      state: started
+      ports:
+      - "3306:3306"
+      env:
+        MYSQL_ROOT_PASSWORD: password
+        MYSQL_DATABASE: DockBeanBiz
+      volumes:
+        - type: bind
+          source: ./db/initdb.d
+          target: /docker-entrypoint-initdb.d
+    register: db_meta
+
+  - name: Wait for db to become available
+    wait_for:
+      host: '{{ db_meta["ansible_facts"]["docker_container"]["NetworkSettings"]["IPAddress"] }}'
+      port: 3306
+      state: drained
+      connect_timeout: 1
+      timeout: 30
+    register: db_running
+    until: db_running is success
+    retries: 10
+  
+  - name: Start the viewer
+    docker_container:
+      name: viewer
+      build:
+        context: viewer/
+        dockerfile: viewer-2.dockerfile
+      restart: always
+      ports:
+        - "5000:5000"
+      volumes:
+        - type: bind
+          source: ./viewer/source
+          target: /srv/viewer
+    register: viewer
+
+#  creator:
+#    build:
+#      context: creator/
+#      dockerfile: creator.dockerfile
+#    restart: "no"
+#    depends_on:
+#      - "db"
+#    volumes:
+#      - type: bind
+#        source: ./creator/source
+#        target: /home/creator

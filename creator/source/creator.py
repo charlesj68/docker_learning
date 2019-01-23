@@ -1,6 +1,8 @@
+import signal
+import sys
+from time import (sleep, strftime)
 import MySQLdb
 import _mysql_exceptions
-from time import (sleep, strftime)
 from numpy.random import (normal, randint)
 
 """
@@ -21,6 +23,13 @@ SQL_INSERT_ORDER = """
         VALUES
             ({},{},'{}');"""
 
+# Global signal to initiate shutdown
+shutdown_requested = False
+
+def sigterm_handler(signal, frame):
+    shutdown_requested = True
+
+
 def gen_order_timeout():
     ORDER_INTERVAL_TIMEOUT_MEAN = 10.0
     ORDER_INTERVAL_TIMEOUT_SD = 5.0
@@ -35,6 +44,8 @@ def gen_order_timeout():
 
 
 def main():
+    global shutdown_requested
+
     print("App setup")
     db_ready = False
     while (not db_ready):
@@ -57,14 +68,15 @@ def main():
     menu = [
         {"menu_item_id": item[0], "item_name": item[1]}
         for item in cur.fetchall()]
+    # Now that we're ready to start inserting data, register our term signal
+    # handler to close our loop and shutdown
+    signal.signal(signal.SIGTERM, sigterm_handler)
+
     # Perform inserts until we're shut down
     print("Start inserts")
-    short_circuit = 10
-    while (True and short_circuit > 0):
+    while (not shutdown_requested):
         print("Add an order")
-        # RNG menu item
         item = menu[randint(0, len(menu))]
-        # RNG quantity
         quantity = randint(1, 4)
         print("Create order for {} of {}".format(quantity, item["item_name"]))
         sql = SQL_INSERT_ORDER.format(
@@ -73,9 +85,9 @@ def main():
         cur.execute(sql)
         db.commit()
         sleep(gen_order_timeout())
-        short_circuit = short_circuit - 1
 
     print("Shutdown")
+    exit()
 
 if __name__ == "__main__":
     main()
