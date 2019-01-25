@@ -3,21 +3,11 @@
   name: create and run example docker application stack
   
   tasks:
-  - name: Manage viewer docker image
-    docker_image:
-      name: viewer
-      state: present
-      build_path: "{{ playbook_dir }}/viewer"
-      dockerfile: viewer-2.dockerfile
-    register: viewer_image
+  - name: Create viewer docker image
+    command: "docker build -t viewer -f {{ playbook_dir }}/viewer/viewer-2.dockerfile {{ playbook_dir }}/viewer"
 
-  - name: Manage the creator docker image
-    docker_image:
-      name: creator
-      state: present
-      build_path: "{{ playbook_dir }}/creator"
-      dockerfile: creator.dockerfile
-    register: creator_image
+  - name: Create creator docker image
+    command: "docker build -t creator -f {{ playbook_dir }}/creator/creator.dockerfile {{ playbook_dir }}/creator"
 
   - name: Ensure docker network present
     docker_network:
@@ -44,9 +34,13 @@
     command: "docker inspect --format '{''{ .NetworkSettings.IPAddress }''}' db"
     register: db_ip
 
+  - name: Report DB IP for on-host access
+    debug:
+      msg: "Database running at {{ db_ip.stdout }}"
+
   - name: Wait for db to become available
     wait_for:
-      host: "{{ mariadb_ip_address.stdout }}"
+      host: "{{ db_ip.stdout }}"
       port: 3306
       state: started
       delay: 5

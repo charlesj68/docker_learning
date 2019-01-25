@@ -9,7 +9,10 @@ COPY source/requirements.txt .
 # TODO Look into mechanisms whereby we don't have to include the build-level
 # requirements in the production container
 RUN ["apk", "add", "build-base"]
-# We need mariadb-dev to use the mysqlclient package
+# We need mysql-devel to use the mysqlclient package
 RUN ["apk", "add", "mariadb-dev"]
 RUN pip install -r requirements.txt
-CMD  ["python", "creator.py"]
+# Run the python script with unbuffed output (-u)
+# Without this the various print() outputs will not
+# appear in the docker logs
+CMD  ["python", "-u", "creator.py"]
