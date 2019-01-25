@@ -9,7 +9,6 @@ from numpy.random import (normal, randint)
 MySQLdb reference: https://mysqlclient.readthedocs.io/index.html
 MySQL language: https://dev.mysql.com/doc/refman/8.0/en/
 """
-host = "db"
 CONNECT_RETRY_TIMEOUT = 10
 
 # SQL Statements
@@ -48,16 +47,20 @@ def main():
 
     print("App setup")
     db_ready = False
+    timeout_limit = 2
     while (not db_ready):
         print("Connect to db")
         try:
             db = MySQLdb.connect(
                 user="beaner", passwd="password",
-                db="DockBeanBiz", host=host, port=3306)
+                db="DockBeanBiz", host="db", port=3306)
             db_ready = True
         except _mysql_exceptions.OperationalError:
             print("Can't connect yet")
             sleep(CONNECT_RETRY_TIMEOUT)
+        timeout_limit -= 1
+        if (timeout_limit < 1):
+            exit("Failed to connect to database")
 
     # Get the list of possible menu items
     # BUG: This list is static! If we add a new menu item while Creator is
