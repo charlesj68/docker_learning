@@ -4,7 +4,7 @@
   
   tasks:
   - name: Create viewer docker image
-    command: "docker build -t viewer -f {{ playbook_dir }}/viewer/viewer-2.dockerfile {{ playbook_dir }}/viewer"
+    command: "docker build -t viewer -f {{ playbook_dir }}/viewer/viewer.dockerfile {{ playbook_dir }}/viewer"
 
   - name: Create creator docker image
     command: "docker build -t creator -f {{ playbook_dir }}/creator/creator.dockerfile {{ playbook_dir }}/creator"
@@ -60,7 +60,7 @@
       ports:
         - "5000:5000"
       volumes:
-        - "{{ playbook_dir }}/viewer/source:/srv/viewer"
+        - "{{ playbook_dir }}/viewer:/srv/viewer"
     register: viewer
 
   - name: Start the creator

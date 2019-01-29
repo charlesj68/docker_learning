@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Menus</title>
+    </head>
+    <body>
+        <t1>Menus</t1>
+        <ul>
+            {% for item in items %}
+            <li>{{ item.menu_item_id }} -- {{item.item_name }}</li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>

@@ -6,8 +6,6 @@ WORKDIR /home/creator/
 # run time
 COPY source/requirements.txt .
 # We need gcc to build the mysqlclient package
-# TODO Look into mechanisms whereby we don't have to include the build-level
-# requirements in the production container
 RUN ["apk", "add", "build-base"]
 # We need mysql-devel to use the mysqlclient package
 RUN ["apk", "add", "mariadb-dev"]

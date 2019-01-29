@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Orders</title>
+    </head>
+    <body>
+        <t1>Prders</t1>
+        <ul>
+            {% for item in items %}
+            <li>{{ item.quantity }} of {{ item.item_name }} at {{item.placement_time }}</li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>
