@@ -1,4 +1,4 @@
 # Viewer requirements
-flask
-mysqlclient
-requests
+flask==1.0.2
+mysqlclient==1.4.1
+requests==2.21.0
