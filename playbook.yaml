@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  name: create and run example docker application stack
+  name: create and run our tutorial application stacks
   
   tasks:
   - name: Create viewer docker image
@@ -8,13 +8,16 @@
 
   - name: Create creator docker image
     command: "docker build -t creator -f {{ playbook_dir }}/creator/creator.dockerfile {{ playbook_dir }}/creator"
+  
+  - name: Create corp docker image
+    command: "docker build -t corp -f {{ playbook_dir }}/corp/corp.dockerfile {{ playbook_dir }}/corp"
 
   - name: Ensure docker network present
     docker_network:
       name: BeanNet
       state: present
 
-  - name: Initialize database container
+  - name: Initialize MySQL database container for Corp
     docker_container:
       name: db
       image: mysql:5.7.22
@@ -27,7 +30,7 @@
         MYSQL_ROOT_PASSWORD: password
         MYSQL_DATABASE: DockBeanBiz
       volumes:
-        - "{{ playbook_dir }}/db/initdb.d:/docker-entrypoint-initdb.d"
+        - "{{ playbook_dir }}/corp/db/initdb.d:/docker-entrypoint-initdb.d"
     register: db_meta
 
   - name: get mysql IP address
@@ -38,7 +41,7 @@
     debug:
       msg: "Database running at {{ db_ip.stdout }}"
 
-  - name: Wait for db to become available
+  - name: Wait for MySQL db to become available
     wait_for:
       host: "{{ db_ip.stdout }}"
       port: 3306
@@ -49,7 +52,34 @@
     register: db_running
     until: db_running is success
     retries: 10
-  
+
+  - name: Start the corp service
+    docker_container:
+      name: corp
+      image: corp
+      restart_policy: always
+      networks:
+        - name: BeanNet
+      ports:
+        - "5000"
+      volumes:
+        - "{{ playbook_dir }}/corp/source:/srv/corp"
+    register: corp
+
+  - name: Initialize MongoDB database container
+    docker_container:
+      name: mongo
+      image: mongo:4.1-xenial
+      state: started
+      networks:
+        - name: BeanNet
+      ports:
+        - 27017
+      env:
+        MONGO_INITDB_ROOT_USERNAME: root
+        MONGO_INITDB_ROOT_PASSWORD: example
+    register: mongo_db
+
   - name: Start the viewer
     docker_container:
       name: viewer
