@@ -9,8 +9,11 @@
   - name: Create creator docker image
     command: "docker build -t creator -f {{ playbook_dir }}/creator/creator.dockerfile {{ playbook_dir }}/creator"
   
-  - name: Create corp docker image
+  - name: Create corp microservice docker image
     command: "docker build -t corp -f {{ playbook_dir }}/corp/corp.dockerfile {{ playbook_dir }}/corp"
+
+  - name: Create locations microservice docker image
+    command: "docker build -t locations -f {{ playbook_dir }}/locations/locations.dockerfile {{ playbook_dir }}/locations"
 
   - name: Ensure docker network present
     docker_network:
@@ -79,6 +82,19 @@
         MONGO_INITDB_ROOT_USERNAME: root
         MONGO_INITDB_ROOT_PASSWORD: example
     register: mongo_db
+
+  - name: Start the locations microservice
+    docker_container:
+      name: locations
+      image: locations
+      restart_policy: always
+      networks:
+        - name: BeanNet
+      ports:
+        - "5000"
+      volumes:
+        - "{{ playbook_dir }}/locations/source:/srv/locations"
+    register: locations
 
   - name: Start the viewer
     docker_container:
