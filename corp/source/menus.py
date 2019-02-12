@@ -1,17 +1,10 @@
-from flask import (
-    Blueprint,
-    Flask,
-    render_template,
-    url_for)
-from requests import get
-from json import dumps
-import MySQLdb
-from MySQLdb.cursors import DictCursor
-from os import environ
+"""Define blueprint for menus endpoints."""
+from flask import Blueprint, jsonify
 from db import connect_db
 
 # SQL Statements
-GET_MENUS = """
+
+SQL_GET_MENUS = """
     SELECT item_name
         FROM menu"""
 
@@ -20,9 +13,7 @@ api = Blueprint('menus', __name__, url_prefix='/menus')
 
 @api.route('/', methods=['GET'])
 def menus():
-    QUERY = GET_MENUS
-    dbhandle = connect_db()
-    cur = dbhandle.cursor()
-    cur.execute(QUERY)
-    res = dumps(cur.fetchall())
-    return res
+    """Return a list of all active menu item names."""
+    cursor = connect_db().cursor()
+    cursor.execute(SQL_GET_MENUS)
+    return jsonify(cursor.fetchall())

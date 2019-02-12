@@ -1,16 +1,20 @@
 """Support the Order API."""
-import datetime
+from bson.objectid import ObjectId
+from datetime import datetime
+from db import get_order_db
 from flask import (
     Blueprint,
     jsonify,
     make_response,
     request)
-from bson.objectid import ObjectId
-from db import get_order_db
 from json import dumps
+from pymongo import MongoClient
 
+# Constants
 
-api = Blueprint('orders', __name__, url_prefix='/orders')
+DB_NAME = 'mongodb'
+DB_USER = 'root'
+DB_PASSWD = 'example'
 
 # Endpoints returning lists
 # /orders/open GET - Return IDs of all active orders
@@ -41,6 +45,13 @@ api = Blueprint('orders', __name__, url_prefix='/orders')
 #   ]
 # }
 
+def get_order_db():
+    client = MongoClient(
+        DB_NAME,
+        username=DB_USER,
+        password=DB_PASSWD)
+    return client.order_db
+
 
 def find_all_order_ids_by(test):
     """Return list of order _id's based on specified test."""
@@ -61,7 +72,7 @@ def orders_detail_post():
     """Create new order in database."""
     jsonData = request.get_json()
     orderdoc = {
-        "createTime": datetime.datetime.now(),
+        "createTime": datetime.now(),
         "status": "new",
         "items": jsonData}
     order_collection = get_order_db().all_orders
@@ -89,13 +100,13 @@ def orders_move_status_put(id, new_status):
         return make_response(None, 204)
     if new_status == "preparing":
         order_doc["status"] = "preparing"
-        order_doc["startTime"] = datetime.datetime.now()
+        order_doc["startTime"] = datetime.now()
     elif new_status == "served":
         order_doc["status"] = "served"
-        order_doc["serveTime"] = datetime.datetime.now()
+        order_doc["serveTime"] = datetime.now()
     elif new_status == "closed":
         order_doc["status"] = "closed"
-        order_doc["checkoutTime"] = datetime.datetime.now()
+        order_doc["checkoutTime"] = datetime.now()
     res = order_set.update_one({"_id": ObjectId(id)}, order_doc)
     if res.matched_count != 1:
         # TODO Failed to update the document, barf!
@@ -125,3 +136,5 @@ def orders_plated():
 def orders_monitor():
     """Get list of orders not yet paid."""
     return dumps(find_all_order_ids_by({"status": {"$eq": "served"}}))
+
+api = Blueprint('orders', __name__, url_prefix='/orders')

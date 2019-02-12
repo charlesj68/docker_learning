@@ -9,6 +9,10 @@ MAX_ORDERS = 2  # Total number of orders to create
 MAX_QUEUE = 3   # Maximum number of parallel orders to allow
 LOOP_TIMEOUT = 2    # Time in seconds to wait before new order creation
 
+#CORP_HOST = 'corp'
+CORP_HOST = '172.17.0.4'
+# LOCATIONS_HOST = 'locations'
+LOCATIONS_HOST = '172.17.0.5'
 
 class my_rest_wrapper(object):
     """Encapsulate a REST API."""
@@ -34,8 +38,7 @@ class order_service(my_rest_wrapper):
 
     def __init__(self):
         """Initialize the interface."""
-        # url = "location"
-        url = "172.17.0.3"
+        url = LOCATIONS_HOST
         port = 5000
         my_rest_wrapper.__init__(self, url, port=port)
 
@@ -58,8 +61,7 @@ class corp_service(my_rest_wrapper):
 
     def __init__(self):
         """Initialize the interface."""
-        # url = "corp"
-        url = "172.17.0.2"
+        url = CORP_HOST
         port = 5000
         my_rest_wrapper.__init__(self, url, port=port)
 

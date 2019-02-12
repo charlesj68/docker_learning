@@ -3,23 +3,30 @@
   name: create and run our tutorial application stacks
   
   tasks:
+
+# Docker image management
+
   - name: Create viewer docker image
     command: "docker build -t viewer -f {{ playbook_dir }}/viewer/viewer.dockerfile {{ playbook_dir }}/viewer"
 
-  - name: Create corp microservice docker image
+  - name: Create Corp microservice docker image
     command: "docker build -t corp -f {{ playbook_dir }}/corp/corp.dockerfile {{ playbook_dir }}/corp"
 
-  - name: Create locations microservice docker image
+  - name: Create Locations microservice docker image
     command: "docker build -t locations -f {{ playbook_dir }}/locations/locations.dockerfile {{ playbook_dir }}/locations"
 
-  - name: Ensure docker network present
+# Docker "Infrastructure"
+# Create a network to talk over, and both the MySQL and Mongodb databases
+# we will use for storage.
+
+  - name: Define docker network
     docker_network:
       name: BeanNet
       state: present
 
   - name: Initialize MySQL database container for Corp
     docker_container:
-      name: db
+      name: mysqldb
       image: mysql:5.7.22
       state: started
       networks:
@@ -31,27 +38,47 @@
         MYSQL_DATABASE: DockBeanBiz
       volumes:
         - "{{ playbook_dir }}/corp/db/initdb.d:/docker-entrypoint-initdb.d"
-    register: db_meta
+    register: mysql
 
-  - name: get mysql IP address
-    command: "docker inspect --format '{''{ .NetworkSettings.IPAddress }''}' db"
-    register: db_ip
+  - name: Initialize MongoDB database container
+    docker_container:
+      name: mongodb
+      image: mongo:4.1-xenial
+      state: started
+      networks:
+        - name: BeanNet
+      ports:
+        - 27017
+      env:
+        MONGO_INITDB_ROOT_USERNAME: root
+        MONGO_INITDB_ROOT_PASSWORD: example
+    register: mongodb
 
-  - name: Report DB IP for on-host access
-    debug:
-      msg: "Database running at {{ db_ip.stdout }}"
+# Discover container IP addresses of databases
+
+  - name: get MySQL container IP address
+    command: "docker inspect --format '{''{ .NetworkSettings.IPAddress }''}' mysqldb"
+    register: mysql_ip
+
+  - name: get Mongodb container IP address
+    command: "docker inspect --format '{''{ .NetworkSettings.IPAddress }''}' mongodb"
+    register: mongodb_ip
+
+# Wait for MySQL database to be listening to the world
 
   - name: Wait for MySQL db to become available
     wait_for:
-      host: "{{ db_ip.stdout }}"
+      host: "{{ mysql_ip.stdout }}"
       port: 3306
       state: started
       delay: 5
       connect_timeout: 15
       timeout: 30
-    register: db_running
-    until: db_running is success
+    register: mysql_running
+    until: mysql_running is success
     retries: 10
+
+# Docker container launches
 
   - name: Start the corp service
     docker_container:
@@ -65,20 +92,6 @@
       volumes:
         - "{{ playbook_dir }}/corp/source:/srv/corp"
     register: corp
-
-  - name: Initialize MongoDB database container
-    docker_container:
-      name: mongo
-      image: mongo:4.1-xenial
-      state: started
-      networks:
-        - name: BeanNet
-      ports:
-        - 27017
-      env:
-        MONGO_INITDB_ROOT_USERNAME: root
-        MONGO_INITDB_ROOT_PASSWORD: example
-    register: mongo_db
 
   - name: Start the locations microservice
     docker_container:
@@ -105,3 +118,31 @@
       volumes:
         - "{{ playbook_dir }}/viewer:/srv/viewer"
     register: viewer
+
+# Discover container IP addresses of services
+
+  - name: Get Corp. service container IP address
+    command: "docker inspect --format '{''{ .NetworkSettings.IPAddress }''}' corp"
+    register: corp_ip
+
+  - name: Get Locations service container IP address
+    command: "docker inspect --format '{''{ .NetworkSettings.IPAddress }''}' locations"
+    register: locations_ip
+
+# Report to the user some important things
+
+  - name: Report MySQL DB IP
+    debug:
+      msg: "Access MySQL from host at {{ mysql_ip.stdout }}"
+
+  - name: Report Mongodb IP
+    debug:
+      msg: "Access Mongodb from host at {{ mongodb_ip.stdout }}"
+
+  - name: Report Corp. service IP
+    debug:
+      msg: "Access Corp. service from host at {{ corp_ip.stdout }}"
+
+  - name: Report Locations service IP
+    debug:
+      msg: "Access Locations service from host at {{ locations_ip.stdout }}"
