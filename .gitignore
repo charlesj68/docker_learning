@@ -1,3 +1,6 @@
-*.pyc
 *.code-workspace
+*.ipynb
+*.pyc
+*.retry
+**/.ipynb_checkpoints/
 **/venv/

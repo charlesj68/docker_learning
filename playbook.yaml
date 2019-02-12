@@ -6,9 +6,6 @@
   - name: Create viewer docker image
     command: "docker build -t viewer -f {{ playbook_dir }}/viewer/viewer.dockerfile {{ playbook_dir }}/viewer"
 
-  - name: Create creator docker image
-    command: "docker build -t creator -f {{ playbook_dir }}/creator/creator.dockerfile {{ playbook_dir }}/creator"
-  
   - name: Create corp microservice docker image
     command: "docker build -t corp -f {{ playbook_dir }}/corp/corp.dockerfile {{ playbook_dir }}/corp"
 
@@ -108,14 +105,3 @@
       volumes:
         - "{{ playbook_dir }}/viewer:/srv/viewer"
     register: viewer
-
-  - name: Start the creator
-    docker_container:
-      name: creator
-      image: creator
-      restart_policy: no
-      networks:
-        - name: BeanNet
-      volumes:
-        - "{{ playbook_dir }}/creator/source:/home/creator"
-    register: creator
