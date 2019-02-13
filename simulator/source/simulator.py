@@ -1,18 +1,25 @@
 """Provide a stream of random orders to exercise the services."""
-import requests
+from numpy.random import (poisson, randint)
+from os import environ
+from requests import put, get, post
 from threading import Thread, active_count
 from time import sleep
-from numpy.random import (poisson, randint)
 
 # Constants
-MAX_ORDERS = 2  # Total number of orders to create
-MAX_QUEUE = 3   # Maximum number of parallel orders to allow
-LOOP_TIMEOUT = 2    # Time in seconds to wait before new order creation
+MAX_ORDERS = 4  # Total number of orders to create
+MAX_QUEUE = 2   # Maximum number of parallel orders to allow
+LOOP_TIMEOUT = 10    # Time in seconds to wait before new order creation
 
-#CORP_HOST = 'corp'
-CORP_HOST = '172.17.0.4'
-# LOCATIONS_HOST = 'locations'
-LOCATIONS_HOST = '172.17.0.5'
+if 'CORP_HOST' in environ.keys():
+    CORP_HOST = environ['CORP_HOST']
+else:
+    CORP_HOST = 'corp'
+
+if 'LOCATIONS_HOST' in environ.keys():
+    LOCATIONS_HOST = environ['LOCATIONS_HOST']
+else:
+    LOCATIONS_HOST = 'locations'
+
 
 class my_rest_wrapper(object):
     """Encapsulate a REST API."""
@@ -45,7 +52,7 @@ class order_service(my_rest_wrapper):
     def post_order(self, order):
         """POST a new order."""
         url = self.build_url("orders/")
-        res = requests.post(url, json=order)
+        res = post(url, json=order)
         if res.ok:
             return res.json()
         return None
@@ -53,7 +60,7 @@ class order_service(my_rest_wrapper):
     def move_status(self, id, new_status):
         """PUT a status update for an order."""
         url = self.build_url("orders/{}/status/{}".format(id, new_status))
-        res = requests.put(url)
+        res = put(url)
 
 
 class corp_service(my_rest_wrapper):
@@ -68,7 +75,7 @@ class corp_service(my_rest_wrapper):
     def get_menu_items(self):
         """Retreive current menu items."""
         url = self.build_url("menus/")
-        res = requests.get(url)
+        res = get(url)
         if res.ok:
             return [x["item_name"] for x in res.json()]
         return None
@@ -130,7 +137,7 @@ def order_gen(id):
 def main(order_count):
     """Create and manage threads to generate the orders."""
     for id in range(MAX_ORDERS):
-        if active_count() >= MAX_QUEUE:
+        while active_count() > MAX_QUEUE:
             print("..All permitted threads running: waiting")
             sleep(LOOP_TIMEOUT)
             print("..Finished waiting")

@@ -1,7 +1,6 @@
 """Support the Order API."""
 from bson.objectid import ObjectId
 from datetime import datetime
-from db import get_order_db
 from flask import (
     Blueprint,
     jsonify,
@@ -46,6 +45,7 @@ DB_PASSWD = 'example'
 # }
 
 def get_order_db():
+    """Obtain the order_db table from Mongo."""
     client = MongoClient(
         DB_NAME,
         username=DB_USER,
@@ -65,6 +65,9 @@ def find_one_order_detail_by(test):
     order_set = get_order_db().all_orders
     item = order_set.find_one(test)
     return [item]
+
+
+api = Blueprint('orders', __name__, url_prefix='/orders')
 
 
 @api.route('/', methods=['POST'])
@@ -88,7 +91,7 @@ def orders_detail_get(id):
         default=str)
 
 
-@api.route('/<id>/status/<status>', methods=['PUT'])
+@api.route('/<id>/status/<new_status>', methods=['PUT'])
 def orders_move_status_put(id, new_status):
     """Change the status of an order, and register when it happens."""
     order_set = get_order_db().all_orders
@@ -136,5 +139,3 @@ def orders_plated():
 def orders_monitor():
     """Get list of orders not yet paid."""
     return dumps(find_all_order_ids_by({"status": {"$eq": "served"}}))
-
-api = Blueprint('orders', __name__, url_prefix='/orders')

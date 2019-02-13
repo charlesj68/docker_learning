@@ -24,4 +24,4 @@ ENV FLASK_DEBUG=1
 # EXPOSE tells the world what port(s) we are planning on communicating outward
 # over, but the actual mapping takes place at container-run time
 EXPOSE 5000
-CMD  ["python", "-m", "flask", "run", "--host=0.0.0.0"]
+CMD  ["python", "-u", "-m", "flask", "run", "--host=0.0.0.0"]

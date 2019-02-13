@@ -5,9 +5,9 @@
 /* We create have an "if not exists" because if the container is started
    with MYSQL_DATABASE defined in the environment then the database name
    will already exist. */
-CREATE DATABASE IF NOT EXISTS DockBeanBiz;
+CREATE DATABASE IF NOT EXISTS CorpDb;
 
-USE DockBeanBiz;
+USE CorpDb;
 
 CREATE TABLE menu (
   menu_item_id INT NOT NULL AUTO_INCREMENT,
@@ -17,8 +17,8 @@ CREATE TABLE menu (
 /********************
  User setup
  ********************/
-CREATE USER 'beaner'@'%' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON DockBeanBiz.* TO 'beaner'@'%';
+CREATE USER 'a_user'@'%' IDENTIFIED BY 'a_password';
+GRANT ALL PRIVILEGES ON CorpDb.* TO 'a_user'@'%';
 
 /********************
  Data creation
