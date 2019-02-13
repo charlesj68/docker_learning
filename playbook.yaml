@@ -141,6 +141,11 @@
     command: "docker inspect --format '{''{ .NetworkSettings.IPAddress }''}' locations"
     register: locations_ip
 
+  - name: Get Viewer container IP address
+    command: "docker inspect --format '{''{ .NetworkSettings.IPAddress }''}' viewer"
+    register: viewer_ip
+
+
 # Report to the user some important things
 
   - name: Report MySQL DB IP
@@ -158,3 +163,7 @@
   - name: Report Locations service IP
     debug:
       msg: "Access Locations service from host at {{ locations_ip.stdout }}"
+
+  - name: Report Viewer URL
+    debug:
+      msg: "Access Viewer output at http://{{ viewer_ip.stdout }}:5000/"

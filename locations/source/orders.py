@@ -8,6 +8,7 @@ from flask import (
     request)
 from json import dumps
 from pymongo import MongoClient
+import excepts
 
 # Constants
 
@@ -63,8 +64,7 @@ def find_all_order_ids_by(test):
 def find_one_order_detail_by(test):
     """Return full order detail based on specified test."""
     order_set = get_order_db().all_orders
-    item = order_set.find_one(test)
-    return [item]
+    return order_set.find_one(test)
 
 
 api = Blueprint('orders', __name__, url_prefix='/orders')
@@ -94,27 +94,54 @@ def orders_detail_get(id):
 @api.route('/<id>/status/<new_status>', methods=['PUT'])
 def orders_move_status_put(id, new_status):
     """Change the status of an order, and register when it happens."""
+    # Since we're implementing a tiny state engine, let us make sure that
+    # requested transitions are valid. This dict maps current statuses to
+    # a list of valid target statuses.
+    valid_transitions = {
+        "new": ["preparing"],
+        "preparing": ["served"],
+        "served": ["closed"]}
+
+    # Within our database we're marking the times that the status transitions
+    # take place. The names of the database fields are tied to, but differ from
+    # the names of the statuses being transitioned. This dict maps the target
+    # status to the database field that records that status-entry-time
+    target_time_field = {
+        "preparing": "startTime",
+        "served": "serveTime",
+        "closed": "checkoutTime"
+    }
+
+    # Get the current order document from the database
     order_set = get_order_db().all_orders
-    order_doc = find_one_order_detail_by({"_id": ObjectId(id)})[0]
-    # TODO Enhancement, ensure that the requested status makes sense given
-    # the current status. For now, just check that the requested status is
-    # _different_ than the current status.
+    order_doc = find_one_order_detail_by({"_id": ObjectId(id)})
+
+    # If the requested new status is already the current value, just return.
     if order_doc["status"] == new_status:
-        return make_response(None, 204)
-    if new_status == "preparing":
-        order_doc["status"] = "preparing"
-        order_doc["startTime"] = datetime.now()
-    elif new_status == "served":
-        order_doc["status"] = "served"
-        order_doc["serveTime"] = datetime.now()
-    elif new_status == "closed":
-        order_doc["status"] = "closed"
-        order_doc["checkoutTime"] = datetime.now()
-    res = order_set.update_one({"_id": ObjectId(id)}, order_doc)
+        return make_response("0", 204)
+
+    # Check that the transition is valid, and raise a 409 if it is not
+    if new_status not in valid_transitions[order_doc["status"]]:
+        raise excepts.ErrorStatus(
+            'Invalid status transition from {} to {}'.format(
+                order_doc["status"], new_status),
+            status_code=409)
+
+    # Update the document we obtained from the database with the new status
+    # value, and the appropriate transition time stamp
+    field_name = target_time_field[new_status]
+    order_doc["status"] = new_status
+    order_doc[field_name] = datetime.now()
+
+    # Replace the document in the database with the modified document
+    res = order_set.replace_one({"_id": ObjectId(id)}, order_doc)
     if res.matched_count != 1:
-        # TODO Failed to update the document, barf!
-        pass
-    return make_response(None, 204)
+        raise excepts.ErrorStatus(
+            'Database update failed to apply',
+            status_code=400
+        )
+
+    return make_response(jsonify(res.matched_count), 204)
 
 
 @api.route('/open', methods=['GET'])

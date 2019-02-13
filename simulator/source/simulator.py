@@ -54,13 +54,14 @@ class order_service(my_rest_wrapper):
         url = self.build_url("orders/")
         res = post(url, json=order)
         if res.ok:
-            return res.json()
+            return res.json()["id"]
         return None
 
     def move_status(self, id, new_status):
         """PUT a status update for an order."""
         url = self.build_url("orders/{}/status/{}".format(id, new_status))
         res = put(url)
+        # TODO What should we do in case of status update failure?
 
 
 class corp_service(my_rest_wrapper):
